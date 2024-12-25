@@ -4,6 +4,7 @@ This is a standalone version of coin3d dragger implemented in FreeCAD, therefore
 
 
 ![dragger a text](./gizmo-text.mp4)
+https://github.com/xiaodaxia-2008/SoFCDragger/blob/master/gizmo-text.mp4
 
 # How to build
 
