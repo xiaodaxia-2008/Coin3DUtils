@@ -5,6 +5,8 @@
 #include <Inventor/nodes/SoFont.h>
 #include <Inventor/nodes/SoSeparator.h>
 #include <Inventor/nodes/SoText3.h>
+#include <Inventor/nodes/SoCylinder.h>
+#include <Inventor/nodes/SoTransform.h>
 #include <spdlog/spdlog.h>
 
 int main(int argc, char **argv) {
@@ -15,13 +17,21 @@ int main(int argc, char **argv) {
   Gui::So3DAnnotation::initClass();
   auto sep = new SoSeparator;
 
-  auto *dragger = new Gui::SoFCCSysDragger;
+  auto dragger = new Gui::SoFCCSysDragger;
+  dragger->draggerSize = 2.f;
   sep->addChild(dragger);
+
+  auto transform = new SoTransform;
+  transform->translation.connectFrom(&dragger->translation);
+  transform->rotation.connectFrom(&dragger->rotation);
+  sep->addChild(transform);
+
   auto font = new SoFont;
   font->name = "NotoSansSC-Regular.ttf";
   font->size = 10;
   auto text = new SoText3;
   text->string = "Alçapão, Hello, 你好！";
+  text->justification = SoText3::CENTER;
   sep->addChild(font);
   sep->addChild(text);
 
