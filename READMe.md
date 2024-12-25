@@ -5,3 +5,5 @@ This is a standalone version of coin3d dragger implemented in FreeCAD, therefore
 # How to build
 
 use vcpkg to install `soqt` package and build with cmake.
+
+![example](./soqt-fcdragger.jpg)
