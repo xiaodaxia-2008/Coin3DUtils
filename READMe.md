@@ -3,11 +3,8 @@
 This is a standalone version of coin3d dragger implemented in FreeCAD, therefore you can use it without outside the FreeCAD application.
 
 
-![dragger a text](./gizmo-text.mp4)
+![dragger a text](./gizmo-text.gif)
 
-
-
-https://github.com/xiaodaxia-2008/SoFCDragger/blob/master/gizmo-text.mp4
 
 # How to build
 
