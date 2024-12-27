@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "*.urdf": "xml",
+        "*.qs": "javascript",
+        "ostream": "cpp",
+        "print": "cpp"
+    }
+}

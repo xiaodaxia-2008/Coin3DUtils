@@ -1,16 +1,44 @@
 # SoFCDragger
 
-This is a standalone version of coin3d dragger implemented in FreeCAD, therefore you can use it without outside the FreeCAD application.
+This is a standalone version of coin3d dragger implemented in FreeCAD, therefore you can use it without the FreeCAD library.
 
 
-![dragger a text](./gizmo-text.gif)
+![dragger a text](./docs/gizmo-text.gif)
 
 
 # How to build
+install vcpkg.
 
-use vcpkg to install `soqt` package and build with cmake.
+create a `CMakeUserPresets.json` file as follows:
 
-![example](./soqt-fcdragger.jpg)
+```json
+{
+    "version": 6,
+    "configurePresets": [
+        {
+            "name": "default",
+            "inherits": "vcpkg",
+            "environment": {
+                "VCPKG_ROOT": "<Path to vcpkg root>"
+            }
+        }
+    ]
+}
+```
+
+then 
+
+```
+mkdir build
+cd build
+cmake .. --preset default
+cmake --build .
+```
+
+run the executable with `./bin/dragger`.
+
+
+![example](./docs/soqt-fcdragger.jpg)
 
 # Notes
 
@@ -30,4 +58,4 @@ sep->addChild(font);
 sep->addChild(text);
 ```
 
-![coin-utf8-text](./coin-utf8-text.jpg)
+![coin-utf8-text](./docs/coin-utf8-text.jpg)

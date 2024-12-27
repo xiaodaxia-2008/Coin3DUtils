@@ -2,15 +2,25 @@
 #include <Inventor/Qt/SoQt.h>
 #include <Inventor/Qt/viewers/SoQtExaminerViewer.h>
 #include <Inventor/draggers/SoTransformBoxDragger.h>
+#include <Inventor/nodes/SoCylinder.h>
 #include <Inventor/nodes/SoFont.h>
 #include <Inventor/nodes/SoSeparator.h>
 #include <Inventor/nodes/SoText3.h>
-#include <Inventor/nodes/SoCylinder.h>
 #include <Inventor/nodes/SoTransform.h>
-#include <spdlog/spdlog.h>
+
+#include <filesystem>
+#include <print>
+#include <source_location>
 
 int main(int argc, char **argv) {
-  coin_setenv("COIN_FONT_PATH", "C:/AppSource/coin-examples", 1);
+  auto src_dir =
+      std::filesystem::path(std::source_location::current().file_name())
+          .parent_path();
+  auto src_dir_str = src_dir.u8string();
+  auto src_dir_cstr = (char *)src_dir_str.c_str();
+  std::println("{}", src_dir_cstr);
+
+  coin_setenv("COIN_FONT_PATH", src_dir_cstr, 1);
 
   QWidget *window = SoQt::init(argv[0]);
   Gui::SoFCCSysDragger::initClass();
