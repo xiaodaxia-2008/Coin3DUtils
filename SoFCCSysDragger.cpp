@@ -99,47 +99,7 @@ using namespace Gui;
 SO_KIT_SOURCE(TDragger)
 
 void TDragger::initClass() {
-//   SO_KIT_INIT_CLASS(TDragger, SoDragger, "Dragger");
-  do {
-    do {
-      const char *classname = "TDragger";
-      do {
-        (void)((!!(TDragger::classTypeId == SoType::badType() &&
-                   "don't init() twice!")) ||
-               (_wassert(L"TDragger::classTypeId == SoType::badType() && "
-                         L"\"don't init() twice!\"",
-                         L"C:\\AppSource\\coin-examples\\SoFCCSysDragger.cpp",
-                         (unsigned)(93)),
-                0));
-        (void)((!!(strcmp("SoDragger", "inherited"))) ||
-               (_wassert(L"strcmp(SO__QUOTE(SoDragger), \"inherited\")",
-                         L"C:\\AppSource\\coin-examples\\SoFCCSysDragger.cpp",
-                         (unsigned)(93)),
-                0));
-        SoType parentType(SoType::fromName("SoDragger"));
-        (void)((!!(parentType != SoType::badType() &&
-                   "you forgot init() on parentclass!")) ||
-               (_wassert(L"parentType != SoType::badType() && \"you forgot "
-                         L"init() on parentclass!\"",
-                         L"C:\\AppSource\\coin-examples\\SoFCCSysDragger.cpp",
-                         (unsigned)(93)),
-                0));
-        TDragger::classTypeId =
-            SoType::createType(parentType, classname, &TDragger::createInstance,
-                               (uint16_t)SoNode::getNextActionMethodIndex());
-        SoNode::incNextActionMethodIndex();
-        TDragger::parentFieldData = SoDragger::getFieldDataPtr();
-        cc_coin_atexit_static_internal(TDragger::atexit_cleanup);
-      }
-      __pragma(warning(push)) __pragma(warning(disable : 4127)) while (0)
-          __pragma(warning(pop));
-    }
-    __pragma(warning(push)) __pragma(warning(disable : 4127)) while (0)
-        __pragma(warning(pop));
-    TDragger::parentcatalogptr = SoDragger::getClassNodekitCatalogPtr();
-  }
-  __pragma(warning(push)) __pragma(warning(disable : 4127)) while (0)
-      __pragma(warning(pop));
+  SO_KIT_INIT_CLASS(TDragger, SoDragger, "Dragger");
 }
 
 TDragger::TDragger() {
