@@ -2,6 +2,15 @@
   "dependencies": [
     "coin",
     "glfw3",
+    {
+      "name": "imgui",
+      "features": [
+        "glfw-binding",
+        "opengl3-binding",
+        "docking-experimental"
+      ]
+    },
+    "imguizmo",
     "spdlog"
   ]
 }

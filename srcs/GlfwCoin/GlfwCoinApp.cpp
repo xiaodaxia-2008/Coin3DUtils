@@ -29,6 +29,10 @@
 
 #include <GLFW/glfw3.h>
 
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
+
 #include <spdlog/spdlog.h>
 
 #include <stdexcept>
@@ -174,13 +178,44 @@ struct GlfwCoinApp::Pimpl {
 
     static void redrawCallback(void *user, SoRenderManager *manager)
     {
-        auto impl = static_cast<Pimpl *>(user);
-        const SoState *state = manager->getGLRenderAction()->getState();
-        // glEnable(GL_DEPTH_TEST);
-        // glEnable(GL_LIGHTING);
-
         manager->render();
-        glfwSwapBuffers(impl->window);
+    }
+
+    void ImGuiDraw() { ImGui::ShowDemoWindow(); }
+
+    void ImGuiInit()
+    {
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+
+        ImGui_ImplGlfw_InitForOpenGL(window, true);
+        ImGui_ImplOpenGL3_Init();
+
+        ImGuiIO &io = ImGui::GetIO();
+        // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
+        ImGui::StyleColorsLight();
+        ImGuiStyle &style = ImGui::GetStyle();
+        style.WindowRounding = 1.f;
+        style.FrameRounding = 3.f;
+    }
+
+    void ImGuiNewFrame()
+    {
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        ImGui::DockSpaceOverViewport(0, nullptr,
+                                     ImGuiDockNodeFlags_PassthruCentralNode);
+    }
+
+    void ImGuiRender()
+    {
+        ImGui::EndFrame();
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
 };
 
@@ -235,7 +270,7 @@ bool GlfwCoinApp::Init()
     impl->renderManager = new SoRenderManager;
     impl->renderManager->setAutoClipping(SoRenderManager::VARIABLE_NEAR_PLANE);
     impl->renderManager->setRenderCallback(impl->redrawCallback, impl);
-    impl->renderManager->setBackgroundColor(SbColor4f(0.0f, 0.0f, 0.0f, 0.0f));
+    impl->renderManager->setBackgroundColor(SbColor4f(1.0f, 1.0f, 1.0f, 0.0f));
     impl->renderManager->activate();
 
     impl->eventManager = new SoEventManager;
@@ -260,6 +295,7 @@ bool GlfwCoinApp::Init()
     glfwSetCursorPosCallback(impl->window, impl->mouseMoveCallback);
     glfwSetScrollCallback(impl->window, impl->mouseWheelCallback);
 
+    impl->ImGuiInit();
     return true;
 }
 
@@ -317,10 +353,14 @@ void GlfwCoinApp::Run()
 
     while (!glfwWindowShouldClose(impl->window)) {
         glfwPollEvents();
+        impl->ImGuiNewFrame();
+        impl->ImGuiDraw();
+
         impl->updateViewport();
         impl->idleCallback();
         impl->exposeCallback();
 
+        impl->ImGuiRender();
         glfwSwapBuffers(impl->window);
     }
 }
