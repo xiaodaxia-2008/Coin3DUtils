@@ -1,5 +1,7 @@
 {
   "dependencies": [
-    "soqt"
+    "coin",
+    "glfw3",
+    "spdlog"
   ]
 }

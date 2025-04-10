@@ -11,15 +11,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-project(coin-examples VERSION 0.1.0 DESCRIPTION "Introduction about coin-examples")
+project(Coin3DUtils VERSION 0.1.0 DESCRIPTION "Introduction about coin-examples")
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 
-find_package(SoQt CONFIG REQUIRED)
-find_package(Qt5 CONFIG REQUIRED COMPONENTS Core Widgets OpenGL)
+# find_package(SoQt CONFIG REQUIRED)
+# find_package(Qt5 CONFIG REQUIRED COMPONENTS Core Widgets OpenGL)
+find_package(Coin CONFIG REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
 
 if(MSVC)
   add_compile_options(/utf-8 /W2)
