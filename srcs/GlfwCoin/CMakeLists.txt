@@ -4,8 +4,12 @@ find_package(imguizmo CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 
-add_library(GlfwCoinApp STATIC GlfwCoinApp.cpp)
-target_link_libraries(GlfwCoinApp PUBLIC
+add_library(CoinApp STATIC
+    CoinApp.cpp
+    CoinAppImpl.cpp
+    EventCallback.cpp
+)
+target_link_libraries(CoinApp PUBLIC
     glfw
     imgui::imgui
     imguizmo::imguizmo
@@ -16,7 +20,10 @@ target_link_libraries(GlfwCoinApp PUBLIC
     Eigen3::Eigen
 )
 
-target_compile_definitions(GlfwCoinApp PUBLIC $<BUILD_INTERFACE:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE>)
+target_compile_definitions(CoinApp PUBLIC $<BUILD_INTERFACE:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE>)
+target_include_directories(CoinApp PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)
 
-add_executable(GlfwCoinDemo GlfwCoinDemo.cpp)
-target_link_libraries(GlfwCoinDemo PRIVATE GlfwCoinApp)
+add_executable(CoinAppDemo CoinAppDemo.cpp)
+target_link_libraries(CoinAppDemo PRIVATE CoinApp)

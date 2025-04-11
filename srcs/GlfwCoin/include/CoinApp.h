@@ -1,35 +1,35 @@
 /**
  * Copyright © 2025 Zen Shawn. All rights reserved.
  *
- * @file GlfwCoinApp.h
+ * @file CoinApp.h
  * @author Zen Shawn
  * @email xiaozisheng2008@hotmail.com
  * @date 16:47:39, April 10, 2025
  */
 #pragma once
 
+#include <functional>
+
 class SoNode;
 
 namespace zen
 {
-class GlfwCoinApp
+struct CoinAppImpl;
+
+class CoinApp
 {
   public:
-    GlfwCoinApp();
+    CoinApp(const char *title = "ZenView", bool create_demo_scene = true);
 
-    ~GlfwCoinApp();
-
-    bool Init();
+    ~CoinApp();
 
     void SetSceneGraph(SoNode *scene);
-
-    void CreateDemoScene();
+    void SetImGuiCallback(std::function<void()> callback);
 
     void Run();
 
   private:
-    struct Pimpl;
-    Pimpl *impl;
+    CoinAppImpl *impl;
 };
 
 } // namespace zen
