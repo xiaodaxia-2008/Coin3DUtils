@@ -2,7 +2,10 @@
     "files.associations": {
         "*.urdf": "xml",
         "*.qs": "javascript",
+        "*.json": "jsonc",
+        "*.qml": "qml",
         "ostream": "cpp",
-        "print": "cpp"
+        "print": "cpp",
+        "dense": "cpp"
     }
 }

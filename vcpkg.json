@@ -2,6 +2,7 @@
   "dependencies": [
     "coin",
     "glfw3",
+    "eigen3",
     {
       "name": "imgui",
       "features": [

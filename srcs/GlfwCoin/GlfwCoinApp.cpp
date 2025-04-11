@@ -6,6 +6,7 @@
  * @email xiaozisheng2008@hotmail.com
  * @date 16:53:09, April 10, 2025
  */
+#define GLM_ENABLE_EXPERIMENTAL
 
 #include "GlfwCoinApp.h"
 
@@ -14,16 +15,21 @@
 #include <Inventor/SoInteraction.h>
 #include <Inventor/SoRenderManager.h>
 #include <Inventor/actions/SoGLRenderAction.h>
+#include <Inventor/actions/SoGetBoundingBoxAction.h>
+#include <Inventor/actions/SoHandleEventAction.h>
 #include <Inventor/actions/SoSearchAction.h>
 #include <Inventor/events/SoKeyboardEvent.h>
 #include <Inventor/events/SoLocation2Event.h>
 #include <Inventor/events/SoMouseButtonEvent.h>
 #include <Inventor/nodekits/SoNodeKit.h>
+#include <Inventor/nodes/SoCallback.h>
 #include <Inventor/nodes/SoCone.h>
+#include <Inventor/nodes/SoDepthBuffer.h>
 #include <Inventor/nodes/SoDirectionalLight.h>
 #include <Inventor/nodes/SoMaterial.h>
 #include <Inventor/nodes/SoPerspectiveCamera.h>
 #include <Inventor/nodes/SoSeparator.h>
+#include <Inventor/nodes/SoTransform.h>
 #include <Inventor/scxml/ScXML.h>
 #include <Inventor/scxml/SoScXMLStateMachine.h>
 
@@ -37,7 +43,13 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/string_cast.hpp>
 
+#define EIGEN_DEFAULT_IO_FORMAT                                                \
+    Eigen::IOFormat(4, 0, ", ", "\n", "", "", "", "")
+#include <Eigen/Dense>
+
+#include <fmt/ostream.h>
 #include <spdlog/spdlog.h>
 
 #include <stdexcept>
@@ -53,6 +65,7 @@ struct GlfwCoinApp::Pimpl {
     SoEventManager *eventManager{nullptr};
     SoCamera *camera{nullptr};
     SoSeparator *root{nullptr};
+    SoTransform *transform{nullptr};
     SoMouseButtonEvent mouseButtonEvt;
     SoLocation2Event location2Evt;
 
@@ -62,11 +75,17 @@ struct GlfwCoinApp::Pimpl {
 
     void updateImGuizmo()
     {
-        if (!camera) {
-            return;
+        if (transform) {
+            // sync transform to modelMatrix
+            float qx, qy, qz, qw, x, y, z;
+            transform->translation.getValue().getValue(x, y, z);
+            transform->rotation.getValue().getValue(qx, qy, qz, qw);
+            glm::mat4 m = glm::mat4_cast(glm::quat(qw, qx, qy, qz));
+            m[3] = glm::vec4(x, y, z, 1.0f);
+            modelMatrix = m;
         }
 
-        if (camera->isOfType(SoPerspectiveCamera::getClassTypeId())) {
+        if (camera && camera->isOfType(SoPerspectiveCamera::getClassTypeId())) {
             auto cam = static_cast<SoPerspectiveCamera *>(camera);
 
             float fov = cam->heightAngle.getValue();
@@ -78,7 +97,7 @@ struct GlfwCoinApp::Pimpl {
             float qx, qy, qz, qw, x, y, z;
             cam->orientation.getValue().getValue(qx, qy, qz, qw);
             cam->position.getValue().getValue(x, y, z);
-            glm::mat4 cameraMatrix = glm::mat4_cast(glm::quat(qx, qy, qz, qw));
+            glm::mat4 cameraMatrix = glm::mat4_cast(glm::quat(qw, qx, qy, qz));
             cameraMatrix[3] = glm::vec4(x, y, z, 1.0f);
             // view matrix is the inverse of the camera matrix
             viewMatrix = glm::inverse(cameraMatrix);
@@ -90,14 +109,20 @@ struct GlfwCoinApp::Pimpl {
         if (camera) {
             ///@note glm matrix is column major, the 3rd column is the camera
             /// position
-
             // camera matrix is the inverse of the view matrix
             auto cameraMatrix = glm::inverse(viewMatrix);
-
             camera->position.setValue(cameraMatrix[3][0], cameraMatrix[3][1],
                                       cameraMatrix[3][2]);
             glm::quat q(cameraMatrix);
             camera->orientation.setValue(q.x, q.y, q.z, q.w);
+        }
+
+        if (transform) {
+            // sync transform to modelMatrix
+            transform->translation.setValue(
+                modelMatrix[3][0], modelMatrix[3][1], modelMatrix[3][2]);
+            glm::quat q(modelMatrix);
+            transform->rotation.setValue(q.x, q.y, q.z, q.w);
         }
     }
 
@@ -148,6 +173,9 @@ struct GlfwCoinApp::Pimpl {
         if (impl->eventManager) {
             impl->eventManager->setViewportRegion(vp);
         }
+        if (impl->camera) {
+            impl->camera->aspectRatio = float(w) / float(h);
+        }
     }
 
     static void keyCallback(GLFWwindow *window, int key, int scancode,
@@ -180,17 +208,17 @@ struct GlfwCoinApp::Pimpl {
             event.setButton(SoMouseButtonEvent::BUTTON1);
         } break;
         case GLFW_MOUSE_BUTTON_RIGHT: {
-            event.setButton(SoMouseButtonEvent::BUTTON3);
+            event.setButton(SoMouseButtonEvent::BUTTON2);
         } break;
         case GLFW_MOUSE_BUTTON_MIDDLE: {
-            event.setButton(SoMouseButtonEvent::BUTTON2);
+            event.setButton(SoMouseButtonEvent::BUTTON3);
         } break;
         default: {
             event.setButton(SoMouseButtonEvent::ANY);
         } break;
         }
 
-        spdlog::debug("mouse click: {} {} {}", button, action, mods);
+        SPDLOG_DEBUG("mouse click: {} {} {}", button, action, mods);
         impl->eventManager->processEvent(&event);
     }
 
@@ -206,7 +234,7 @@ struct GlfwCoinApp::Pimpl {
         event.setPosition(pos);
         impl->mouseButtonEvt.setPosition(pos);
 
-        spdlog::debug("mouse move: {:.2f} {:.2f}", xpos, ypos);
+        // SPDLOG_DEBUG("mouse move: {:.2f} {:.2f}", xpos, ypos);
         impl->eventManager->processEvent(&event);
     }
 
@@ -222,7 +250,6 @@ struct GlfwCoinApp::Pimpl {
             event.setButton(SoMouseButtonEvent::BUTTON5);
         }
 
-        spdlog::debug("mouse wheel: {:.2f} {:.2f}", xoffset, yoffset);
         impl->eventManager->processEvent(&event);
     }
 
@@ -237,17 +264,17 @@ struct GlfwCoinApp::Pimpl {
         auto vp = ImGui::GetMainViewport();
         ImGuizmo::SetRect(vp->Pos.x, vp->Pos.y, vp->Size.x, vp->Size.y);
         float focal = camera->focalDistance.getValue();
-
+        auto position = camera->position.getValue();
         ImVec2 size(128, 128);
         ImVec2 pos(vp->WorkPos.x + vp->WorkSize.x - size.x, vp->WorkPos.y);
         ImGuizmo::ViewManipulate(glm::value_ptr(viewMatrix), focal, pos, size,
                                  0x10101010);
         ImGuizmo::Manipulate(
             glm::value_ptr(viewMatrix), glm::value_ptr(projectionMatrix),
-            ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::MODE::LOCAL,
-            glm::value_ptr(modelMatrix));
+            ImGuizmo::OPERATION::TRANSLATE | ImGuizmo::OPERATION::ROTATE,
+            ImGuizmo::MODE::LOCAL, glm::value_ptr(modelMatrix));
         // ImGui::ShowDemoWindow();
-        // syncImGuizmo();
+        syncImGuizmo();
     }
 
     void ImGuiInit()
@@ -259,7 +286,6 @@ struct GlfwCoinApp::Pimpl {
         ImGui_ImplOpenGL3_Init();
 
         ImGuiIO &io = ImGui::GetIO();
-        // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
         ImGui::StyleColorsLight();
@@ -293,6 +319,55 @@ struct GlfwCoinApp::Pimpl {
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
     }
+
+    static void SoCallbackFunc(void *user, SoAction *action)
+    {
+        auto impl = static_cast<Pimpl *>(user);
+        if (action->isOfType(SoGLRenderAction::getClassTypeId())) {
+            impl->ImGuiNewFrame();
+            impl->ImGuiDraw();
+            impl->ImGuiRender();
+            return;
+        } else if (action->isOfType(SoHandleEventAction::getClassTypeId())) {
+            auto handleEventAction = static_cast<SoHandleEventAction *>(action);
+            auto event = handleEventAction->getEvent();
+            bool isMouseButtonEvent =
+                event->isOfType(SoMouseButtonEvent::getClassTypeId());
+            bool isMouseMoveEvent =
+                event->isOfType(SoLocation2Event::getClassTypeId());
+            ImGuiIO &io = ImGui::GetIO();
+            if ((isMouseButtonEvent || isMouseMoveEvent) &&
+                io.WantCaptureMouse) {
+                handleEventAction->setHandled();
+                SPDLOG_DEBUG("imgui is capturing mouse event");
+            }
+        } else if (action->isOfType(SoGetBoundingBoxAction::getClassTypeId())) {
+            auto getBoundingBoxAction =
+                static_cast<SoGetBoundingBoxAction *>(action);
+
+            ///@todo how to compute the exact gizmo bounding box ?
+            // the gizmo axes is 100pixels long in screen space
+            auto &modelMatrix = impl->modelMatrix;
+            auto minPt = modelMatrix[3];
+            auto maxPt = modelMatrix * glm::vec4(1, 1, 1, 1);
+
+            if (impl->camera->isOfType(SoPerspectiveCamera::getClassTypeId())) {
+
+                auto cam = static_cast<SoPerspectiveCamera *>(impl->camera);
+                auto &vp = getBoundingBoxAction->getViewportRegion();
+                float fov = cam->heightAngle.getValue();
+                auto size = vp.getViewportSize();
+
+                float pixelWorldSize =
+                    2.0f * glm::length(minPt) * tan(fov / 2.f) / size[1];
+                maxPt = modelMatrix * (pixelWorldSize * glm::vec4(1, 1, 1, 1));
+            }
+
+            SbBox3f box(minPt.x, minPt.y, minPt.z, maxPt.x, maxPt.y, maxPt.z);
+            getBoundingBoxAction->extendBy(box);
+            // glm::unProject(glm::vec3( ));
+        }
+    }
 };
 
 GlfwCoinApp::GlfwCoinApp() { impl = new Pimpl; }
@@ -319,7 +394,7 @@ GlfwCoinApp::~GlfwCoinApp()
 bool GlfwCoinApp::Init()
 {
     glfwSetErrorCallback([](int error, const char *description) {
-        spdlog::error("{}:{}", error, description);
+        SPDLOG_ERROR("{}:{}", error, description);
     });
 
     if (!glfwInit()) {
@@ -346,7 +421,7 @@ bool GlfwCoinApp::Init()
     impl->renderManager = new SoRenderManager;
     impl->renderManager->setAutoClipping(SoRenderManager::VARIABLE_NEAR_PLANE);
     impl->renderManager->setRenderCallback(impl->redrawCallback, impl);
-    impl->renderManager->setBackgroundColor(SbColor4f(1.0f, 1.0f, 1.0f, 0.0f));
+    impl->renderManager->setBackgroundColor(SbColor4f(0.3f, 0.3f, 0.3f, 0.0f));
     impl->renderManager->activate();
 
     impl->eventManager = new SoEventManager;
@@ -388,11 +463,15 @@ void GlfwCoinApp::SetSceneGraph(SoNode *scene)
     if (auto camera = impl->searchForCamera(root)) {
         impl->camera = camera;
     } else {
-        SoPerspectiveCamera *perspectiveCamera = new SoPerspectiveCamera;
-        perspectiveCamera->nearDistance = 0.01f;
-        perspectiveCamera->farDistance = 100.0f;
-        impl->camera = perspectiveCamera;
-        root->addChild(perspectiveCamera);
+        SoPerspectiveCamera *pcam = new SoPerspectiveCamera;
+        pcam->heightAngle = glm::radians(45.f);
+        pcam->nearDistance = 0.01f;
+        pcam->farDistance = 100.0f;
+        pcam->position = SbVec3f(0, 0, 10);
+        pcam->focalDistance = 10.0f;
+        pcam->pointAt(SbVec3f(0, 0, 0), SbVec3f(0, 1, 0));
+        impl->camera = pcam;
+        root->addChild(pcam);
     }
 
     SoDirectionalLight *light = new SoDirectionalLight;
@@ -401,6 +480,17 @@ void GlfwCoinApp::SetSceneGraph(SoNode *scene)
     root->addChild(light);
 
     root->addChild(scene);
+
+    // disable depth test for imgui
+    auto sodepthBuffer = new SoDepthBuffer;
+    sodepthBuffer->test = false;
+    root->addChild(sodepthBuffer);
+
+    auto socb = new SoCallback;
+    socb->setCallback(impl->SoCallbackFunc, impl);
+    root->addChild(socb);
+    // super imposition doesn't get handle event action
+    // impl->renderManager->addSuperimposition(socb);
 
     impl->renderManager->setSceneGraph(root);
     impl->renderManager->setCamera(impl->camera);
@@ -416,6 +506,9 @@ void GlfwCoinApp::CreateDemoScene()
     mat->ambientColor.setValue(1.0, 0.0, 0.0);
     mat->diffuseColor.setValue(1.0, 0.0, 0.0);
     mat->specularColor.setValue(1.0, 1.0, 1.0);
+    SoTransform *trans = new SoTransform;
+    impl->transform = trans;
+    scene->addChild(trans);
     scene->addChild(mat);
     scene->addChild(new SoCone);
     SetSceneGraph(scene);
@@ -430,14 +523,14 @@ void GlfwCoinApp::Run()
 
     while (!glfwWindowShouldClose(impl->window)) {
         glfwPollEvents();
-        impl->ImGuiNewFrame();
-        impl->ImGuiDraw();
+        // impl->ImGuiNewFrame();
+        // impl->ImGuiDraw();
 
         impl->updateViewport();
         impl->idleCallback();
         impl->exposeCallback();
 
-        impl->ImGuiRender();
+        // impl->ImGuiRender();
         glfwSwapBuffers(impl->window);
     }
 
