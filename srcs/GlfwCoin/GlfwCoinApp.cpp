@@ -33,6 +33,11 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
+#include <ImGuizmo.h>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #include <spdlog/spdlog.h>
 
 #include <stdexcept>
@@ -50,6 +55,51 @@ struct GlfwCoinApp::Pimpl {
     SoSeparator *root{nullptr};
     SoMouseButtonEvent mouseButtonEvt;
     SoLocation2Event location2Evt;
+
+    glm::mat4 viewMatrix{1.0f};
+    glm::mat4 projectionMatrix{1.0f};
+    glm::mat4 modelMatrix{1.0f};
+
+    void updateImGuizmo()
+    {
+        if (!camera) {
+            return;
+        }
+
+        if (camera->isOfType(SoPerspectiveCamera::getClassTypeId())) {
+            auto cam = static_cast<SoPerspectiveCamera *>(camera);
+
+            float fov = cam->heightAngle.getValue();
+            float aspect = cam->aspectRatio.getValue();
+            float near = cam->nearDistance.getValue();
+            float far = cam->farDistance.getValue();
+            projectionMatrix = glm::perspective(fov, aspect, near, far);
+
+            float qx, qy, qz, qw, x, y, z;
+            cam->orientation.getValue().getValue(qx, qy, qz, qw);
+            cam->position.getValue().getValue(x, y, z);
+            glm::mat4 cameraMatrix = glm::mat4_cast(glm::quat(qx, qy, qz, qw));
+            cameraMatrix[3] = glm::vec4(x, y, z, 1.0f);
+            // view matrix is the inverse of the camera matrix
+            viewMatrix = glm::inverse(cameraMatrix);
+        }
+    }
+
+    void syncImGuizmo()
+    {
+        if (camera) {
+            ///@note glm matrix is column major, the 3rd column is the camera
+            /// position
+
+            // camera matrix is the inverse of the view matrix
+            auto cameraMatrix = glm::inverse(viewMatrix);
+
+            camera->position.setValue(cameraMatrix[3][0], cameraMatrix[3][1],
+                                      cameraMatrix[3][2]);
+            glm::quat q(cameraMatrix);
+            camera->orientation.setValue(q.x, q.y, q.z, q.w);
+        }
+    }
 
     SoCamera *searchForCamera(SoNode *root)
     {
@@ -181,7 +231,24 @@ struct GlfwCoinApp::Pimpl {
         manager->render();
     }
 
-    void ImGuiDraw() { ImGui::ShowDemoWindow(); }
+    void ImGuiDraw()
+    {
+        updateImGuizmo();
+        auto vp = ImGui::GetMainViewport();
+        ImGuizmo::SetRect(vp->Pos.x, vp->Pos.y, vp->Size.x, vp->Size.y);
+        float focal = camera->focalDistance.getValue();
+
+        ImVec2 size(128, 128);
+        ImVec2 pos(vp->WorkPos.x + vp->WorkSize.x - size.x, vp->WorkPos.y);
+        ImGuizmo::ViewManipulate(glm::value_ptr(viewMatrix), focal, pos, size,
+                                 0x10101010);
+        ImGuizmo::Manipulate(
+            glm::value_ptr(viewMatrix), glm::value_ptr(projectionMatrix),
+            ImGuizmo::OPERATION::TRANSLATE, ImGuizmo::MODE::LOCAL,
+            glm::value_ptr(modelMatrix));
+        // ImGui::ShowDemoWindow();
+        // syncImGuizmo();
+    }
 
     void ImGuiInit()
     {
@@ -207,6 +274,8 @@ struct GlfwCoinApp::Pimpl {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        ImGuizmo::BeginFrame();
+
         ImGui::DockSpaceOverViewport(0, nullptr,
                                      ImGuiDockNodeFlags_PassthruCentralNode);
     }
@@ -216,6 +285,13 @@ struct GlfwCoinApp::Pimpl {
         ImGui::EndFrame();
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    }
+
+    void ImGuiDestroy()
+    {
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
     }
 };
 
@@ -295,7 +371,6 @@ bool GlfwCoinApp::Init()
     glfwSetCursorPosCallback(impl->window, impl->mouseMoveCallback);
     glfwSetScrollCallback(impl->window, impl->mouseWheelCallback);
 
-    impl->ImGuiInit();
     return true;
 }
 
@@ -351,6 +426,8 @@ void GlfwCoinApp::Run()
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_LIGHTING);
 
+    impl->ImGuiInit();
+
     while (!glfwWindowShouldClose(impl->window)) {
         glfwPollEvents();
         impl->ImGuiNewFrame();
@@ -363,6 +440,8 @@ void GlfwCoinApp::Run()
         impl->ImGuiRender();
         glfwSwapBuffers(impl->window);
     }
+
+    impl->ImGuiDestroy();
 }
 
 } // namespace zen

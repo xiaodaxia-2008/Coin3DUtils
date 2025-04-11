@@ -11,6 +11,7 @@
       ]
     },
     "imguizmo",
+    "glm",
     "spdlog"
   ]
 }

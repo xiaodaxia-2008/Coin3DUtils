@@ -1,6 +1,7 @@
 find_package(glfw3 CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(imguizmo CONFIG REQUIRED)
+find_package(glm CONFIG REQUIRED)
 
 add_library(GlfwCoinApp STATIC GlfwCoinApp.cpp)
 target_link_libraries(GlfwCoinApp PUBLIC
@@ -10,6 +11,7 @@ target_link_libraries(GlfwCoinApp PUBLIC
     Coin::Coin
     OpenGL::GL
     spdlog::spdlog
+    glm::glm
 )
 
 add_executable(GlfwCoinDemo GlfwCoinDemo.cpp)
