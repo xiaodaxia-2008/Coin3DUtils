@@ -1,6 +1,5 @@
 #include "SoFCCSysDragger.h"
-#include <Inventor/Qt/SoQt.h>
-#include <Inventor/Qt/viewers/SoQtExaminerViewer.h>
+#include <CoinApp.h>
 #include <Inventor/draggers/SoTransformBoxDragger.h>
 #include <Inventor/nodes/SoCylinder.h>
 #include <Inventor/nodes/SoFont.h>
@@ -21,14 +20,14 @@ int main(int argc, char **argv) {
   std::println("{}", src_dir_cstr);
 
   coin_setenv("COIN_FONT_PATH", src_dir_cstr, 1);
+  zen::CoinApp app;
 
-  QWidget *window = SoQt::init(argv[0]);
   Gui::SoFCCSysDragger::initClass();
   Gui::So3DAnnotation::initClass();
   auto sep = new SoSeparator;
 
   auto dragger = new Gui::SoFCCSysDragger;
-  dragger->draggerSize = 2.f;
+  dragger->draggerSize = 1.f;
   sep->addChild(dragger);
 
   auto transform = new SoTransform;
@@ -45,13 +44,8 @@ int main(int argc, char **argv) {
   sep->addChild(font);
   sep->addChild(text);
 
-  SoQtExaminerViewer *viewer = new SoQtExaminerViewer(window);
-  viewer->setSceneGraph(sep);
-  viewer->show();
-  SoQt::show(window);
+  app.SetSceneGraph(sep);
+  app.Run();
 
-  SoQt::mainLoop();
-
-  delete viewer;
   return 0;
 }

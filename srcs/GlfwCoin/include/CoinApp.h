@@ -11,6 +11,7 @@
 #include <functional>
 
 class SoNode;
+class SoTransform;
 
 namespace zen
 {
@@ -19,12 +20,13 @@ struct CoinAppImpl;
 class CoinApp
 {
   public:
-    CoinApp(const char *title = "ZenView", bool create_demo_scene = true);
+    CoinApp(const char *title = "ZenView");
 
     ~CoinApp();
 
     void SetSceneGraph(SoNode *scene);
     void SetImGuiCallback(std::function<void()> callback);
+    void SetGizmoTransform(SoTransform *transform);
 
     void Run();
 

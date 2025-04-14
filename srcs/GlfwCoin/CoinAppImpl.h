@@ -33,7 +33,7 @@ struct CoinAppImpl {
     SoEventManager *event_manager{nullptr};
     SoCamera *camera{nullptr};
     SoSeparator *root{nullptr};
-    SoTransform *transform{nullptr};
+    SoTransform *gizmo_transform{nullptr};
     SoMouseButtonEvent mouse_button_evt;
     SoLocation2Event location2_evt;
 

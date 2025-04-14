@@ -13,16 +13,9 @@
 #include "CoinAppImpl.h"
 #include "EventCallback.h"
 
-#include <Inventor/actions/SoGLRenderAction.h>
-#include <Inventor/elements/SoCacheElement.h>
 #include <Inventor/nodes/SoCallback.h>
-#include <Inventor/nodes/SoCone.h>
-#include <Inventor/nodes/SoDepthBuffer.h>
 #include <Inventor/nodes/SoDirectionalLight.h>
-#include <Inventor/nodes/SoMaterial.h>
 #include <Inventor/nodes/SoPerspectiveCamera.h>
-#include <Inventor/nodes/SoSeparator.h>
-#include <Inventor/nodes/SoTransform.h>
 
 #include <GLFW/glfw3.h>
 
@@ -36,10 +29,6 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
 
-// #define EIGEN_DEFAULT_IO_FORMAT                                                \
-//     Eigen::IOFormat(4, 0, ", ", "\n", "", "", "", "")
-// #include <Eigen/Dense>
-
 #include <fmt/ostream.h>
 #include <spdlog/spdlog.h>
 
@@ -47,11 +36,7 @@
 
 namespace zen
 {
-
-SoNode *CreateDemoScene(CoinAppImpl *impl);
-
-CoinApp::CoinApp(const char *title, bool create_demo_scene)
-    : impl(new CoinAppImpl)
+CoinApp::CoinApp(const char *title) : impl(new CoinAppImpl)
 {
     glfwSetErrorCallback([](int error, const char *description) {
         SPDLOG_ERROR("{}:{}", error, description);
@@ -77,10 +62,6 @@ CoinApp::CoinApp(const char *title, bool create_demo_scene)
     glfwSetMouseButtonCallback(impl->window, mouseClickCallback);
     glfwSetCursorPosCallback(impl->window, mouseMoveCallback);
     glfwSetScrollCallback(impl->window, mouseWheelCallback);
-
-    if (create_demo_scene) {
-        SetSceneGraph(CreateDemoScene(impl));
-    }
 }
 
 CoinApp::~CoinApp()
@@ -124,6 +105,9 @@ void CoinApp::SetSceneGraph(SoNode *scene)
     impl->root = new SoSeparator;
     impl->root->ref();
 
+    impl->camera = nullptr;
+    impl->gizmo_transform = nullptr;
+
     auto root = impl->root;
 
     if (auto camera = SearchForCamera(root)) {
@@ -132,7 +116,7 @@ void CoinApp::SetSceneGraph(SoNode *scene)
         SoPerspectiveCamera *pcam = new SoPerspectiveCamera;
         pcam->heightAngle = glm::radians(45.f);
         pcam->nearDistance = 0.01f;
-        pcam->farDistance = 100.0f;
+        pcam->farDistance = 1000.0f;
         pcam->position = SbVec3f(0, 0, 10);
         pcam->focalDistance = 10.0f;
         pcam->pointAt(SbVec3f(0, 0, 0), SbVec3f(0, 1, 0));
@@ -164,6 +148,8 @@ void CoinApp::SetSceneGraph(SoNode *scene)
 
     impl->event_manager->setSceneGraph(root);
     impl->event_manager->setCamera(impl->camera);
+
+    impl->camera->viewAll(root, impl->render_manager->getViewportRegion());
 }
 
 void CoinApp::SetImGuiCallback(std::function<void()> callback)
@@ -171,48 +157,9 @@ void CoinApp::SetImGuiCallback(std::function<void()> callback)
     impl->imGuiCallback = std::move(callback);
 }
 
-SoNode *CreateDemoScene(CoinAppImpl *impl)
+void CoinApp::SetGizmoTransform(SoTransform *transform)
 {
-    SoSeparator *scene = new SoSeparator;
-    SoMaterial *mat = new SoMaterial;
-    mat->ambientColor.setValue(1.0, 0.0, 0.0);
-    mat->diffuseColor.setValue(1.0, 0.0, 0.0);
-    mat->specularColor.setValue(1.0, 1.0, 1.0);
-    SoTransform *trans = new SoTransform;
-    impl->transform = trans;
-    scene->addChild(trans);
-    scene->addChild(mat);
-    auto cone = new SoCone;
-    scene->addChild(cone);
-
-    auto sodepthBuffer = new SoDepthBuffer;
-    sodepthBuffer->test = false;
-    scene->addChild(sodepthBuffer);
-
-    auto socb = new SoCallback;
-    socb->setCallback(
-        [](void *data, SoAction *action) {
-            auto cone = static_cast<SoCone *>(data);
-            if (action->isOfType(SoGLRenderAction::getClassTypeId())) {
-                // must invalidate the cache to trigger the callback every frame
-                SoCacheElement::invalidate(action->getState());
-                ImGui::Begin("Cone");
-                static float bottomRadius = cone->bottomRadius.getValue();
-                if (ImGui::SliderFloat("Bottom Radius", &bottomRadius, 1.f,
-                                       10.0f)) {
-                    cone->bottomRadius.setValue(bottomRadius);
-                }
-                static float height = cone->height.getValue();
-                if (ImGui::SliderFloat("Height", &height, 1.f, 10.0f)) {
-                    cone->height.setValue(height);
-                }
-                ImGui::End();
-            }
-        },
-        cone);
-    scene->addChild(socb);
-
-    return scene;
+    impl->gizmo_transform = transform;
 }
 
 } // namespace zen

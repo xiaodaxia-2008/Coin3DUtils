@@ -5,6 +5,17 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "FreeCADGizmoDemo",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/bin/FreeCADGizmoDemo.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/build",
+            "environment": [],
+            "console": "integratedTerminal"
+        },
+        {
             "name": "GlfwCoinDemo",
             "type": "cppvsdbg",
             "request": "launch",

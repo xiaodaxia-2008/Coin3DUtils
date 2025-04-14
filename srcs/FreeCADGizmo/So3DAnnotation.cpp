@@ -20,14 +20,10 @@
  *                                                                         *
  ***************************************************************************/
 
-// #include "PreCompiled.h"
-
-#ifndef _PreComp_
-#include <QtOpenGL>
 #include <Inventor/elements/SoCacheElement.h>
-#endif
 
-// #include "SoFCDB.h"
+#include <Inventor/system/gl.h>
+
 #include "So3DAnnotation.h"
 
 using namespace Gui;

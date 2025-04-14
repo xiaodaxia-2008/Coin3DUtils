@@ -86,16 +86,16 @@ CoinAppImpl::~CoinAppImpl()
     }
 
     camera = nullptr;
-    transform = nullptr;
+    gizmo_transform = nullptr;
 }
 
 void CoinAppImpl::UpdateImGuizmo()
 {
-    if (transform) {
+    if (gizmo_transform) {
         // sync transform to modelMatrix
         float qx, qy, qz, qw, x, y, z;
-        transform->translation.getValue().getValue(x, y, z);
-        transform->rotation.getValue().getValue(qx, qy, qz, qw);
+        gizmo_transform->translation.getValue().getValue(x, y, z);
+        gizmo_transform->rotation.getValue().getValue(qx, qy, qz, qw);
         glm::mat4 m = glm::mat4_cast(glm::quat(qw, qx, qy, qz));
         m[3] = glm::vec4(x, y, z, 1.0f);
         model_matrix = m;
@@ -133,12 +133,12 @@ void CoinAppImpl::SyncImGuizmo()
         camera->orientation.setValue(q.x, q.y, q.z, q.w);
     }
 
-    if (transform) {
+    if (gizmo_transform) {
         // sync transform to modelMatrix
-        transform->translation.setValue(model_matrix[3][0], model_matrix[3][1],
+        gizmo_transform->translation.setValue(model_matrix[3][0], model_matrix[3][1],
                                         model_matrix[3][2]);
         glm::quat q(model_matrix);
-        transform->rotation.setValue(q.x, q.y, q.z, q.w);
+        gizmo_transform->rotation.setValue(q.x, q.y, q.z, q.w);
     }
 }
 
@@ -176,7 +176,7 @@ void CoinAppImpl::ImGuiDraw()
     ImGuizmo::ViewManipulate(glm::value_ptr(view_matrix), focal, pos, size,
                              0x10101010);
 
-    if (transform) {
+    if (gizmo_transform) {
         ImGuizmo::Manipulate(
             glm::value_ptr(view_matrix), glm::value_ptr(projection_matrix),
             ImGuizmo::OPERATION::TRANSLATE | ImGuizmo::OPERATION::ROTATE,
