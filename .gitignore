@@ -2,3 +2,5 @@ build
 Build
 out
 CMakeUserPresets.json
+PyInventor/_pydef_pybind11/
+PyInventor/_stubs/

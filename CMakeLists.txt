@@ -28,3 +28,4 @@ if(MSVC)
 endif()
 
 add_subdirectory(srcs)
+add_subdirectory(PyInventor)
